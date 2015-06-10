@@ -22,6 +22,10 @@ S3Upload.prototype.onError = function(status, file) {
     return console.log('base.onError()', status);
 };
 
+S3Upload.prototype.onPreUpload = function (message) {
+    return console.log('base.onPreUpload()', message)
+};
+
 function S3Upload(options) {
     if (options == null) {
         options = {};
@@ -36,6 +40,7 @@ function S3Upload(options) {
 }
 
 S3Upload.prototype.handleFileSelect = function(files) {
+    this.onPreUpload(files);
     var result = [];
     for (var i=0; i < files.length; i++) {
         var file = files[i];
