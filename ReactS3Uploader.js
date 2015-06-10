@@ -10,7 +10,8 @@ var ReactS3Uploader = React.createClass({
         signingUrl: React.PropTypes.string.isRequired,
         onProgress: React.PropTypes.func,
         onFinish: React.PropTypes.func,
-        onError: React.PropTypes.func
+        onError: React.PropTypes.func,
+        onPreUpload: React.PropTypes.func
     },
 
     getDefaultProps: function() {
@@ -23,6 +24,9 @@ var ReactS3Uploader = React.createClass({
             },
             onError: function(message) {
                 console.log("Upload error: " + message);
+            },
+            onPreUpload: function(message) {
+                console.log("Message: " + message);
             }
         };
     },
@@ -31,6 +35,7 @@ var ReactS3Uploader = React.createClass({
         new S3Upload({
             fileElement: this.getDOMNode(),
             signingUrl: this.props.signingUrl,
+            onPreUpload: this.props.onPreUpload,
             onProgress: this.props.onProgress,
             onFinishS3Put: this.props.onFinish,
             onError: this.props.onError
