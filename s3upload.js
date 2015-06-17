@@ -108,10 +108,8 @@ S3Upload.prototype.uploadToS3 = function(file, signResult) {
             }
         }.bind(this);
     }
-    var acl = signResult.acl || 'public-read';
 
     xhr.setRequestHeader('Content-Type', signResult.mimeType);
-    xhr.setRequestHeader('x-amz-acl', acl);
 
     return xhr.send(file);
 };
