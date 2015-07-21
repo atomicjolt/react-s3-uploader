@@ -31,17 +31,17 @@ function S3Upload(options) {
             this[option] = options[option];
         }
     }
-    this.handleFileSelect(this.fileElement);
+    this.handleFileSelect(this.fileElement, this.acl);
 }
 
-S3Upload.prototype.handleFileSelect = function(fileElement) {
+S3Upload.prototype.handleFileSelect = function(fileElement, acl) {
     this.onPreUpload(fileElement.files);
     this.onProgress(0, 'Upload started.');
     var files = fileElement.files;
     var result = [];
     for (var i=0; i < files.length; i++) {
         var f = files[i];
-        result.push(this.uploadFile(f));
+        result.push(this.uploadFile(f, acl));
     }
     return result;
 };
@@ -62,10 +62,10 @@ S3Upload.prototype.createCORSRequest = function(method, url) {
     return xhr;
 };
 
-S3Upload.prototype.executeOnSignedUrl = function(file, callback) {
+S3Upload.prototype.executeOnSignedUrl = function(file, acl, callback) {
     var xhr = new XMLHttpRequest();
     var fileName = file.name.replace(/\s+/g, "_");
-    xhr.open('GET', this.signingUrl + '?objectName=' + fileName, true);
+    xhr.open('GET', this.signingUrl + '?objectName=' + fileName + "&acl=" + acl, true);
     xhr.overrideMimeType && xhr.overrideMimeType('text/plain; charset=x-user-defined');
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200) {
@@ -114,8 +114,8 @@ S3Upload.prototype.uploadToS3 = function(file, signResult) {
     return xhr.send(file);
 };
 
-S3Upload.prototype.uploadFile = function(file) {
-    return this.executeOnSignedUrl(file, function(signResult) {
+S3Upload.prototype.uploadFile = function(file, acl) {
+    return this.executeOnSignedUrl(file, acl, function(signResult) {
         return this.uploadToS3(file, signResult);
     }.bind(this));
 };

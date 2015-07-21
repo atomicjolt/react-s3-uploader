@@ -8,6 +8,7 @@ var ReactS3Uploader = React.createClass({
 
     propTypes: {
         signingUrl: React.PropTypes.string.isRequired,
+        acl: React.PropTypes.string,
         onProgress: React.PropTypes.func,
         onFinish: React.PropTypes.func,
         onError: React.PropTypes.func,
@@ -16,6 +17,7 @@ var ReactS3Uploader = React.createClass({
 
     getDefaultProps: function() {
         return {
+            acl: "authenticated-read",
             onProgress: function(percent, message) {
                 console.log('Upload progress: ' + percent + '% ' + message);
             },
@@ -35,6 +37,7 @@ var ReactS3Uploader = React.createClass({
         new S3Upload({
             fileElement: this.getDOMNode(),
             signingUrl: this.props.signingUrl,
+            acl: this.props.acl,
             onPreUpload: this.props.onPreUpload,
             onProgress: this.props.onProgress,
             onFinishS3Put: this.props.onFinish,
