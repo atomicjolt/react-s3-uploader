@@ -15,7 +15,7 @@ var ReactS3Uploader = React.createClass({
         signingUrlQueryParams: React.PropTypes.object,
         uploadRequestHeaders: React.PropTypes.object,
         contentDisposition: React.PropTypes.string,
-        server: React.PropTypes.string
+        server: React.PropTypes.string,
         onPreUpload: React.PropTypes.func
     },
 
