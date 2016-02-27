@@ -157,8 +157,8 @@ S3Upload.prototype.uploadToS3 = function(file, signResult) {
     return xhr.send(file);
 };
 
-S3Upload.prototype.uploadFile = function(file, acl) {
-    return this.executeOnSignedUrl(file, acl, function(signResult) {
+S3Upload.prototype.uploadFile = function(file) {
+    return this.executeOnSignedUrl(file, function(signResult) {
         return this.uploadToS3(file, signResult);
     }.bind(this));
 };
