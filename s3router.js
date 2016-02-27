@@ -1,8 +1,7 @@
 
-var mime = require('mime'),
-    uuid = require('node-uuid'),
-    aws = require('aws-sdk'),
-    express = require('express');
+ var uuid = require('node-uuid'),
+     aws = require('aws-sdk'),
+     express = require('express');
 
 
 function checkTrailingSlash(path) {
@@ -20,25 +19,41 @@ function S3Router(options) {
     if (!S3_BUCKET) {
         throw new Error("S3_BUCKET is required.");
     }
+
+    var s3Options = {};
     if (options.region) {
-        aws.config.update({region: options.region});
+      s3Options.region = options.region;
     }
 
     var router = express.Router();
 
     /**
      * Redirects image requests with a temporary signed URL, giving access
-     * to GET an image.
+     * to GET an upload.
      */
-    router.get(/\/img\/(.*)/, function(req, res) {
+    function tempRedirect(req, res) {
         var params = {
             Bucket: S3_BUCKET,
             Key: checkTrailingSlash(getFileKeyDir(req)) + req.params[0]
         };
-        var s3 = new aws.S3();
+        var s3 = new aws.S3(s3Options);
         s3.getSignedUrl('getObject', params, function(err, url) {
             res.redirect(url);
         });
+    };
+
+    /**
+     * Image specific route.
+     */
+    router.get(/\/img\/(.*)/, function(req, res) {
+        return tempRedirect(req, res);
+    });
+
+    /**
+     * Other file type(s) route.
+     */
+    router.get(/\/uploads\/(.*)/, function(req, res) {
+        return tempRedirect(req, res);
     });
 
     /**
@@ -47,10 +62,14 @@ function S3Router(options) {
      */
     router.get('/sign', function(req, res) {
         var filename = uuid.v4() + "_" + req.query.objectName;
-        var mimeType = mime.lookup(filename);
+        var mimeType = req.query.contentType;
         var fileKey = checkTrailingSlash(getFileKeyDir(req)) + filename;
+        // Set any custom headers
+        if (options.headers) {
+          res.set(options.headers);
+        }
 
-        var s3 = new aws.S3();
+        var s3 = new aws.S3(s3Options);
         var params = {
             Bucket: S3_BUCKET,
             Key: fileKey,
@@ -65,7 +84,7 @@ function S3Router(options) {
             }
             res.json({
                 signedUrl: data,
-                publicUrl: '/s3/img/' + filename,
+                publicUrl: '/s3/uploads/' + filename,
                 filename: filename
             });
         });

@@ -12,6 +12,11 @@ var ReactS3Uploader = React.createClass({
         onProgress: React.PropTypes.func,
         onFinish: React.PropTypes.func,
         onError: React.PropTypes.func,
+        signingUrlHeaders: React.PropTypes.object,
+        signingUrlQueryParams: React.PropTypes.object,
+        uploadRequestHeaders: React.PropTypes.object,
+        contentDisposition: React.PropTypes.string,
+        server: React.PropTypes.string,
         onPreUpload: React.PropTypes.func
     },
 
@@ -27,6 +32,7 @@ var ReactS3Uploader = React.createClass({
             onError: function(message) {
                 console.log("Upload error: " + message);
             },
+            server: '',
             onPreUpload: function(message) {
                 console.log("Message: " + message);
             }
@@ -35,14 +41,22 @@ var ReactS3Uploader = React.createClass({
 
     uploadFile: function() {
         new S3Upload({
-            fileElement: this.getDOMNode(),
+            fileElement: findDOMNode(this),
             signingUrl: this.props.signingUrl,
-            acl: this.props.acl,
             onPreUpload: this.props.onPreUpload,
             onProgress: this.props.onProgress,
             onFinishS3Put: this.props.onFinish,
-            onError: this.props.onError
+            onError: this.props.onError,
+            signingUrlHeaders: this.props.signingUrlHeaders,
+            signingUrlQueryParams: this.props.signingUrlQueryParams,
+            uploadRequestHeaders: this.props.uploadRequestHeaders,
+            contentDisposition: this.props.contentDisposition,
+            server: this.props.server
         });
+    },
+
+    clear: function() {
+        clearInputFile(findDOMNode(this));
     },
 
     render: function() {
@@ -50,6 +64,26 @@ var ReactS3Uploader = React.createClass({
     }
 
 });
+
+function findDOMNode(cmp) {
+    return React.findDOMNode ? React.findDOMNode(cmp) : cmp.getDOMNode();
+}
+
+// http://stackoverflow.com/a/24608023/194065
+function clearInputFile(f){
+    if(f.value){
+        try{
+            f.value = ''; //for IE11, latest Chrome/Firefox/Opera...
+        }catch(err){ }
+        if(f.value){ //for IE5 ~ IE10
+            var form = document.createElement('form'),
+                parentNode = f.parentNode, ref = f.nextSibling;
+            form.appendChild(f);
+            form.reset();
+            parentNode.insertBefore(f,ref);
+        }
+    }
+}
 
 
 module.exports = ReactS3Uploader;

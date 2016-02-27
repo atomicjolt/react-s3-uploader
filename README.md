@@ -20,12 +20,26 @@ From Browser
         accept="image/*"
         onProgress={this.onUploadProgress}
         onError={this.onUploadError}
-        onFinish={this.onUploadFinish}/>
+        onFinish={this.onUploadFinish}
+        signingUrlHeaders={{ additional: headers }}
+        signingUrlQueryParams={{ additional: query-params }}
+        uploadRequestHeaders={{ 'x-amz-acl': 'public-read' }}
+        contentDisposition="auto"
+        server="http://cross-origin-server.com" />
 
-The above example shows all supported `props`.
+The above example shows all supported `props`.  For `uploadRequestHeaders`, the default ACL is shown.
 
 This expects a request to `/s3/sign` to return JSON with a `signedUrl` property that can be used
 to PUT the file in S3.
+
+`contentDisposition` is optional and can be one of `inline`, `attachment` or `auto`. If given,
+the `Content-Disposition` header will be set accordingly with the file's original filename.
+If it is `auto`, the disposition type will be set to `inline` for images and `attachment` for
+all other files.
+
+`server` is optional and can be used to specify the location of the server which is
+running the ReactS3Uploader server component if it is not the same as the one from
+which the client is served.
 
 The resulting DOM is essentially:
 
@@ -42,12 +56,15 @@ You can use the Express router that is bundled with this module to answer calls 
     app.use('/s3', require('react-s3-uploader/s3router')({
         bucket: "MyS3Bucket",
         region: 'us-east-1', //optional
+        headers: {'Access-Control-Allow-Origin': '*'}, // optional
         ACL: 'private' // this is default
     }));
 
-This also provides another endpoint: `GET /s3/img/(.*)`.  This will create a temporary URL
-that provides access to the uploaded file (which are uploaded privately at the moment).  The
+This also provides another endpoint: `GET /s3/img/(.*)` and `GET /s3/uploads/(.*)`.  This will create a temporary URL
+that provides access to the uploaded file (which are uploaded privately by default).  The
 request is then redirected to the URL, so that the image is served to the client.
+
+**To use this you will need to include the [express module](https://www.npmjs.com/package/express) in your package.json dependencies.**
 
 #### Access/Secret Keys
 
@@ -56,7 +73,7 @@ The `aws-sdk` must be configured with your account's Access Key and Secret Acces
 ### Other Types of Servers
 
 ##### Boto for Python, in a Django project
-    
+
     import boto
     import mimetypes
     import json
@@ -69,14 +86,58 @@ The `aws-sdk` must be configured with your account's Access Key and Secret Acces
         content_type = mimetypes.guess_type(object_name)[0]
 
         signed_url = conn.generate_url(
-            300, 
-            "PUT", 
-            'BUCKET_NAME', 
+            300,
+            "PUT",
+            'BUCKET_NAME',
             'FOLDER_NAME' + object_name,
             headers = {'Content-Type': content_type, 'x-amz-acl':'public-read'})
 
         return HttpResponse(json.dumps({'signedUrl': signed_url}))
-        
+
+#### Ruby on Rails, assuming FOG usage
+
+    # Usual fog config, set as an initializer
+    FOG = Fog::Storage.new({
+      :provider              => 'AWS',
+      :aws_access_key_id     => ENV['AWS_ACCESS_KEY_ID'],
+      :aws_secret_access_key => ENV['AWS_SECRET_ACCESS_KEY']
+    })
+
+    # In the controller
+    options = {path_style: true}
+    headers = {"Content-Type" => params[:contentType], "x-amz-acl" => "public-read"}
+
+    @url = FOG.put_object_url(ENV['S3_BUCKET_NAME'], "user_uploads/#{params[:objectName]}", 15.minutes.from_now.to_time.to_i, headers, options)
+
+    respond_to do |format|
+      format.json { render json: {signedUrl: @url} }
+    end
+
+
 ##### Other Servers
 
 If you do some work on another server, and would love to contribute documentation, please send us a PR!
+
+
+Changelog (Starting at 1.2.0)
+------------
+
+##### 2.0
+
+* **Breaking Change** [Fixes #52] Removing `express` as a `peerDependency`.  Projects should explicitly depend on `express` to use the bundled router
+* [Fixes #51] url encode the contentType
+
+##### 1.2.2
+
+* [Fixes #48] Only setting the AWS region for the S3 client, not the global default
+
+##### 1.2.1
+
+* Added `server` prop to `ReactS3Uploader` to support running the signing server on a different domain
+* Added `headers` option to `s3router` to support specifying `'Access-Control-Allow-Origin'` header (or any others)
+* [Fixes #44] Using `unorm.nfc(str)` in favor of `str.normalize()`
+
+##### 1.2.0
+
+* Added dependencies `unorm` and `latinize` for uploading files with non-latin characters.
+* Filenames are normalized, latinized, and whitespace is stripped before uploading
